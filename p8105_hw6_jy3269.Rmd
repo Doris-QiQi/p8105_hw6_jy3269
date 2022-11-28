@@ -19,7 +19,11 @@ raw_data <- read_csv("./data/homicide-data.csv",show_col_types = FALSE)
 homicide <- raw_data %>% 
   mutate(
     city_state = str_c(city,", ",state),
-    solved = ifelse(disposition == "Closed by arrest",1,0))
+    solved = ifelse(disposition == "Closed by arrest",1,0)) %>% 
+  mutate(
+      victim_sex = fct_relevel(victim_sex, "Female"),
+      victim_race = fct_relevel(victim_race, "White"),
+         ) 
 
 homicide
 
@@ -141,7 +145,92 @@ ggplot(cities_logistic, aes(y = fct_reorder(city_state, OR), x = OR)) +
 ```
 
 
+
+## Problem 3
+
+```{r,message=FALSE}
+data <- read_csv("./data/birthweight.csv")
+
+data
+```
+
+### 1. Clean the data for regression analysis
+
 ```{r}
+birthwt <- data %>% 
+  mutate(
+    frace = recode(frace, `1` = "White", `2` = "Black", `3` = "Asian", `4` = "Puerto Rican", `8` = "Other", `9` = "Unknown"),
+    mrace = recode(mrace, `1` = "White", `2` = "Black", `3` = "Asian", `4` = "Puerto Rican", `8` = "Other"),
+    babysex = recode(babysex, `1` = "Male", `2` = "Female")
+    ) %>% 
+    filter(frace != "Unknown") %>% 
+  mutate(
+    frace = fct_relevel(frace, "White"),
+    mrace = fct_relevel(mrace, "White"),
+    babysex = fct_relevel(babysex,"Female")
+         ) %>% 
+  select(bwt,everything())
+
+birthwt
 
 
 ```
+
+
+```{r}
+
+
+
+```
+
+
+```{r}
+
+
+
+```
+
+
+```{r}
+
+
+
+```
+
+
+```{r}
+
+
+
+```
+
+
+```{r}
+
+
+
+```
+
+
+```{r}
+
+
+
+```
+
+
+```{r}
+
+
+
+```
+
+
+
+
+
+
+
+
+
+
