@@ -2,7 +2,7 @@
 title: "p8105_hw6_jy3269"
 author: "Jingyi Yao"
 date: "`r Sys.Date()`"
-output: html_document
+output: github_document
 ---
 
 ```{r,include=F}
@@ -177,22 +177,57 @@ birthwt
 ```
 
 
+## 2. Fit a full model and using stepwise method to select variables
 ```{r}
+# Fit the full model 
+full_model <- lm(bwt ~., data = birthwt)
 
+# begin stepwise procedure
+stepwise_model <- MASS::stepAIC(full_model, direction = "backward", trace = FALSE)
+summary(stepwise_model)
 
 
 ```
 
 
 ```{r}
-
-
+birthwt %>%  
+  add_predictions(stepwise_model) %>% 
+  add_residuals(stepwise_model) %>% 
+  ggplot(aes(x = pred, y = resid)) + geom_point() +
+  labs(title = "Residuals against fitted values plot", ) + xlab("fitted value") + ylab("residuals")
 
 ```
 
 
 ```{r}
+#first create a dataframe 
+cv_df =
+  crossv_mc(birthwt, 100) %>% 
+  mutate(
+    train = map(train, as_tibble),
+    test = map(test, as_tibble))
 
+#then fit three models:
+cv_df = 
+  cv_df %>% 
+  mutate(
+    my_model  = map(train, ~lm( bwt ~ babysex + bhead + blength + delwt + fincome + 
+    gaweeks + mheight + mrace + parity + ppwt + smoken, data = .x)),
+    main_effect_model  = map(train, ~lm(bwt ~ gaweeks + blength, data = .x)),
+    interactive_model  = map(train, ~lm(bwt ~ bhead*blength*babysex, data = .x))) %>% 
+  mutate(
+    rmse_my_model = map2_dbl(my_model, test, ~rmse(model = .x, data = .y)),
+    rmse_main_effect    = map2_dbl(main_effect_model, test, ~rmse(model = .x, data = .y)),
+    rmse_interactive = map2_dbl(interactive_model, test, ~rmse(model = .x, data = .y)))
+
+#Get the summarize the result:
+cv_df %>% 
+  summarize(
+    rmse_my_model_mean = mean(rmse_my_model),
+    rmse_main_effect_mean = mean(rmse_main_effect),
+    rmse_interactive_meam = mean(rmse_interactive)
+  ) %>% knitr::kable()
 
 
 ```
