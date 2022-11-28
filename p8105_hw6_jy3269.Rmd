@@ -1,0 +1,104 @@
+---
+title: "p8105_hw6_jy3269"
+author: "Jingyi Yao"
+date: "`r Sys.Date()`"
+output: html_document
+---
+
+```{r,include=F}
+library(tidyverse)
+library(modelr)
+```
+
+
+## Problem 2
+
+### 1. Create `city_state` variable and a binary `solved` variable 
+```{r}
+raw_data <- read_csv("./data/homicide-data.csv",show_col_types = FALSE)
+homicide <- raw_data %>% 
+  mutate(
+    city_state = str_c(city,", ",state),
+    solved = ifelse(disposition == "Closed by arrest",1,0))
+
+homicide
+
+```
+
+## 2. Omit cities : Dallas, TX; Phoenix, AZ; and Kansas City, MO  and  Tulsa, AL
+```{r}
+homicide <- homicide %>% 
+  filter(city_state != "Dallas, TX", city_state != "Phoenix, AZ", city_state != "Kansas City, MO", city_state != "Tulsa, AL")
+
+```
+
+
+## 3. Limit your analysis those for whom victim_race is white or black
+```{r}
+homicide <- homicide %>% 
+  filter(victim_race == "White" | victim_race == "Black") %>% 
+  mutate(victim_age = as.numeric(victim_age))
+
+homicide
+
+```
+
+## 4. Select the predictors and response variable in Baltimore
+```{r}
+baltimore_df = 
+  homicide %>% 
+  filter(city == "Baltimore") %>% 
+  select(solved, victim_age, victim_race, victim_sex)
+
+baltimore_df
+
+```
+
+
+## 4. Fit logistic regression for Baltimore
+```{r}
+
+
+```
+
+
+```{r}
+
+
+```
+
+
+```{r}
+
+
+```
+
+
+```{r}
+
+
+```
+
+
+```{r}
+
+
+```
+
+
+```{r}
+
+
+```
+
+
+```{r}
+
+
+```
+
+
+```{r}
+
+
+```
