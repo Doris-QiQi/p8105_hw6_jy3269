@@ -63,8 +63,6 @@ Baltimore_logistic =
   baltimore_df %>% 
   glm(solved ~ victim_age + victim_race + victim_sex, data = ., family = binomial())
 
-confint(Baltimore_logistic)
-
 ```
 
 
@@ -81,7 +79,7 @@ save(Baltimore_logistic, file = "./result/Baltimore_logistic.RData")
 ```{r}
 Baltimore_logistic %>% 
   broom::tidy() %>% 
-  knitr::kable()
+  knitr::kable(digits = 3)
 
 
 ```
@@ -92,11 +90,11 @@ Baltimore_logistic %>%
 Baltimore_logistic %>% 
   broom::tidy() %>%
   mutate(OR = exp(estimate),
-         lower_conf = exp(confint(Baltimore_logistic)[,1]),
-         upper_conf = exp(confint(Baltimore_logistic)[,2])) %>%
+         OR_lower_bound = exp(confint(Baltimore_logistic)[,1]),
+         OR_upper_bound = exp(confint(Baltimore_logistic)[,2])) %>%
   filter(term == 'victim_sexMale') %>% 
-  select(estimate, OR,lower_conf,upper_conf) %>% 
-  knitr::kable()
+  select(estimate, OR,OR_lower_bound,OR_upper_bound) %>% 
+  knitr::kable(digits = 3)
 
 
 ```
@@ -123,10 +121,10 @@ cities_logistic =
   select(city_state,estimate,`2.5 %`,`97.5 %`) %>% 
   mutate(
     OR = exp(estimate),
-    `2.5 %` = exp(`2.5 %`),
-    `97.5 %` = exp(`97.5 %`)
+    OR_lower_bound = exp(`2.5 %`),
+    OR_upper_bound = exp(`97.5 %`)
     ) %>% 
-  select(city_state,estimate,OR,`2.5 %`,`97.5 %`) 
+  select(city_state,estimate,OR,OR_lower_bound,OR_upper_bound) 
 ```
 
 
@@ -139,8 +137,8 @@ cities_logistic %>% knitr::kable(digits = 3)
 ```{r}
 ggplot(cities_logistic, aes(y = fct_reorder(city_state, OR), x = OR)) +
   geom_point() +
-  geom_errorbar(aes(xmin = `2.5 %`, xmax = `97.5 %`)) +
-  labs(title = "Adjusted OR and 95% CI", ) + ylab("City,State")+theme(axis.text.y = element_text(hjust = 0.5,size = 6))
+  geom_errorbar(aes(xmin = OR_lower_bound, xmax = OR_upper_bound)) +
+  labs(title = "Estimated OR and 95% CI", ) + ylab("City,State") + theme(axis.text.y = element_text(hjust = 0.5,size = 6))
 
 ```
 
