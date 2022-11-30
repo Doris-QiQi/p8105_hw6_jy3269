@@ -154,8 +154,6 @@ Comments on the plot :
 
 ```{r,message=FALSE}
 data <- read_csv("./data/birthweight.csv")
-
-data
 ```
 
 ### 1. Clean the data for regression analysis
@@ -175,92 +173,97 @@ birthwt <- data %>%
          ) %>% 
   select(bwt,everything())
 
-birthwt
+head(birthwt)
 
 
 ```
 
 
-## 2. Fit a full model and using stepwise method to select variables
+## 2. Fit a full model 
 ```{r}
-# Fit the full model 
 full_model <- lm(bwt ~., data = birthwt)
 
-# begin stepwise procedure
+broom::tidy(full_model) 
+  
+```
+
+
+## 3. Select variables in the full model 
+```{r}
 stepwise_model <- MASS::stepAIC(full_model, direction = "backward", trace = FALSE)
-summary(stepwise_model)
+broom::tidy(stepwise_model) 
 
 
 ```
 
 
+## 4. Plot residuals vs. fitted values
 ```{r}
 birthwt %>%  
   add_predictions(stepwise_model) %>% 
   add_residuals(stepwise_model) %>% 
   ggplot(aes(x = pred, y = resid)) + geom_point() +
-  labs(title = "Residuals against fitted values plot", ) + xlab("fitted value") + ylab("residuals")
+  labs(title = "Residuals vs Fitted Values ", ) + xlab("Fitted Value") + ylab("Residuals")
 
 ```
 
 
+## 5. Split dataset 
 ```{r}
-#first create a dataframe 
-cv_df =
+cv_df = 
   crossv_mc(birthwt, 100) %>% 
   mutate(
-    train = map(train, as_tibble),
+    train = map(train, as_tibble), 
     test = map(test, as_tibble))
 
-#then fit three models:
-cv_df = 
-  cv_df %>% 
+```
+
+
+## 6. Compare the 3 models -- mean rmse
+```{r}
+cv_df %>% 
   mutate(
     my_model  = map(train, ~lm( bwt ~ babysex + bhead + blength + delwt + fincome + 
     gaweeks + mheight + mrace + parity + ppwt + smoken, data = .x)),
-    main_effect_model  = map(train, ~lm(bwt ~ gaweeks + blength, data = .x)),
-    interactive_model  = map(train, ~lm(bwt ~ bhead*blength*babysex, data = .x))) %>% 
+    model_2  = map(train, ~lm(bwt ~ gaweeks + blength, data = .x)),
+    model_3  = map(train, ~lm(bwt ~ bhead*blength*babysex, data = .x))) %>% 
   mutate(
     rmse_my_model = map2_dbl(my_model, test, ~rmse(model = .x, data = .y)),
-    rmse_main_effect    = map2_dbl(main_effect_model, test, ~rmse(model = .x, data = .y)),
-    rmse_interactive = map2_dbl(interactive_model, test, ~rmse(model = .x, data = .y)))
-
-#Get the summarize the result:
-cv_df %>% 
+    rmse_2    = map2_dbl(model_2, test, ~rmse(model = .x, data = .y)),
+    rmse_3 = map2_dbl(model_3, test, ~rmse(model = .x, data = .y))) %>% 
   summarize(
-    rmse_my_model_mean = mean(rmse_my_model),
-    rmse_main_effect_mean = mean(rmse_main_effect),
-    rmse_interactive_meam = mean(rmse_interactive)
-  ) %>% knitr::kable()
-
-
-```
-
-
-```{r}
+    avg_rmse_my_model = mean(rmse_my_model),
+    avg_rmse_model_2 = mean(rmse_2),
+    avg_rmse_model_3  = mean(rmse_3)
+  ) %>% 
+  knitr::kable()
 
 
 
 ```
 
 
-```{r}
-
-
-
-```
-
 
 ```{r}
-
-
-
-```
-
-
-```{r}
-
-
+cv_df %>% 
+  mutate(
+    my_model  = map(train, ~lm( bwt ~ babysex + bhead + blength + delwt + fincome + 
+    gaweeks + mheight + mrace + parity + ppwt + smoken, data = .x)),
+    model_2  = map(train, ~lm(bwt ~ gaweeks + blength, data = .x)),
+    model_3  = map(train, ~lm(bwt ~ bhead*blength*babysex, data = .x))) %>% 
+  mutate(
+    rmse_my_model = map2_dbl(my_model, test, ~rmse(model = .x, data = .y)),
+    rmse_2    = map2_dbl(model_2, test, ~rmse(model = .x, data = .y)),
+    rmse_3 = map2_dbl(model_3, test, ~rmse(model = .x, data = .y))) %>%
+  select(starts_with("rmse")) %>%  
+  pivot_longer(
+    everything(),
+    names_to = "model", 
+    values_to = "rmse",
+    names_prefix = "rmse_") %>% 
+  mutate(model = fct_inorder(model)) %>% 
+  ggplot(aes(x = model, y = rmse)) + geom_violin(aes(fill = model))
+  
 
 ```
 
