@@ -179,6 +179,11 @@ head(birthwt)
 ```
 
 
+
+\ \par
+Next, I will fit my linear model using the cleaned data. First, I plan to fit the model using all the variables other than `bwt` (the response variable) as predictors to build a full model. Then I will use the step-wise method to select significant variables backwards. The selected variables and the response variable build up my regression model.
+
+
 ## 2. Fit a full model 
 ```{r}
 full_model <- lm(bwt ~., data = birthwt)
@@ -195,6 +200,10 @@ broom::tidy(stepwise_model)
 
 
 ```
+
+
+As is shown in the stepwise_model result, the selected predictors are : babysex, bhead, blength, delwt, fincome, gaweeks, mheight, mrace, parity, ppwt, smoken
+
 
 
 ## 4. Plot residuals vs. fitted values
