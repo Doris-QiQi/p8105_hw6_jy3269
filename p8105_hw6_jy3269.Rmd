@@ -85,15 +85,15 @@ Baltimore_logistic %>%
 ```
 
 
-## 8. Get the 95% CI of OR and comparing male victims to female victims
+## 8. Get the 95% CI of OR 
 ```{r}
 alpha = 0.05
 
 Baltimore_logistic %>% 
   broom::tidy() %>%
   mutate(OR = exp(estimate),
-         OR_lower_bound = exp(estimate - qnorm(1 - alpha/2) * std.error),
-         OR_upper_bound = exp(estimate + qnorm(1 - alpha/2) * std.error)) %>%
+         OR_lower_bound = exp(confint(Baltimore_logistic)[,1]),
+         OR_upper_bound = exp(confint(Baltimore_logistic)[,2]) )%>%
   filter(term == 'victim_sexMale') %>% 
   select(estimate, OR,OR_lower_bound,OR_upper_bound) %>% 
   knitr::kable(digits = 3)
@@ -101,6 +101,8 @@ Baltimore_logistic %>%
 
 ```
 
+
+The OR result shows that male victims in the homicides have a lower chance to have the case solved compared with women.
 
 
 ## 9.  Run `glm` for each of the cities
@@ -142,7 +144,7 @@ ggplot(cities_logistic, aes(y = fct_reorder(city_state, OR), x = OR)) +
 
 ```
 
-
+\ \par
 Comments on the plot :
 
   * Most of the estimated OR is less than 1. Thus, in most cities, the homicide whose victim is a male is less likely to be solved compared to those with a female victim.
@@ -150,6 +152,8 @@ Comments on the plot :
   * Some cities' 95% CI does not contain 1, which means that there are significant difference between the odds of solving homicides for male and female victims in these cities. For example, New York, Chicago are cities with CI that does not contain 1.
 
 
+\ \par
+\ \par
 ## Problem 3
 
 ```{r,message=FALSE}
@@ -179,31 +183,36 @@ head(birthwt)
 ```
 
 
-
 \ \par
-Next, I will fit my linear model using the cleaned data. First, I plan to fit the model using all the variables other than `bwt` (the response variable) as predictors to build a full model. Then I will use the step-wise method to select significant variables backwards. The selected variables and the response variable build up my regression model.
+Next, I will fit my linear model using the cleaned data. I examined the meaning of each variable and find it reasonable that all the variables may be relevant to the birth weight of a baby. Thus, I plan to fit the model using all the variables other than `bwt` (the response variable) as predictors to build a full model first. Then I will use the step-wise method to select significant variables backwards. The selected variables and the response variable build up my regression model.
+
 
 
 ## 2. Fit a full model 
 ```{r}
 full_model <- lm(bwt ~., data = birthwt)
 
-broom::tidy(full_model) 
+broom::tidy(full_model) %>%  knitr::kable()
   
 ```
+
 
 
 ## 3. Select variables in the full model 
 ```{r}
 stepwise_model <- MASS::stepAIC(full_model, direction = "backward", trace = FALSE)
-broom::tidy(stepwise_model) 
+broom::tidy(stepwise_model) %>%  knitr::kable()
 
 
 ```
 
 
-As is shown in the stepwise_model result, the selected predictors are : babysex, bhead, blength, delwt, fincome, gaweeks, mheight, mrace, parity, ppwt, smoken
+\ \par
+As is shown in the stepwise_model result, the selected predictors are : babysex, bhead, blength, delwt, fincome, gaweeks, mheight, mrace, parity, ppwt, smoken. 
 
+
+\ \par
+The residual against fitted value plot is shown below.
 
 
 ## 4. Plot residuals vs. fitted values
@@ -228,8 +237,9 @@ cv_df =
 ```
 
 
+
 ## 6. Compare the 3 models -- mean rmse
-```{r}
+```{r,warning=FALSE}
 cv_df %>% 
   mutate(
     my_model  = map(train, ~lm( bwt ~ babysex + bhead + blength + delwt + fincome + 
@@ -253,7 +263,7 @@ cv_df %>%
 
 
 
-```{r}
+```{r,warning=FALSE}
 cv_df %>% 
   mutate(
     my_model  = map(train, ~lm( bwt ~ babysex + bhead + blength + delwt + fincome + 
@@ -276,7 +286,8 @@ cv_df %>%
 
 ```
 
-
+\ \par
+According to the table and violin plot above, we know that my model has the lowest mean RMSE. The main effect model (model 2) has the highest RMSE. The interaction model (model 3) has RMSE slightly higher than my model.
 
 
 
