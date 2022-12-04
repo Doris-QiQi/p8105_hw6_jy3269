@@ -169,10 +169,10 @@ alpha = 0.05
 Baltimore_logistic %>% 
   broom::tidy() %>%
   mutate(OR = exp(estimate),
-         OR_lower_bound = exp(confint(Baltimore_logistic)[,1]),
-         OR_upper_bound = exp(confint(Baltimore_logistic)[,2]) )%>%
+         OR_lower = exp(estimate - 1.96*std.error),
+         OR_upper = exp(estimate + 1.96*std.error) ) %>%
   filter(term == 'victim_sexMale') %>% 
-  select(estimate, OR,OR_lower_bound,OR_upper_bound) %>% 
+  select(estimate, OR,OR_lower,OR_upper) %>% 
   knitr::kable(digits = 3)
 
 
@@ -182,42 +182,45 @@ Baltimore_logistic %>%
 The OR result shows that male victims in the homicides have a lower chance to have the case solved compared with women.
 
 
-## 9.  Run `glm` for each of the cities
+## 9.  Define a `glm_all()` function
 ```{r,message=FALSE, warning=FALSE}
-cities_logistic = 
-  homicide %>% 
-  select(city_state, victim_race:victim_sex, solved) %>% 
-  nest(sample = victim_race:solved) %>% 
-  mutate(
-    models = map(sample, ~glm(solved ~ victim_age+victim_race+victim_sex, family= binomial(), data=.x)),
-    results = map(models, broom::tidy),
-    conf_int = map(models, ~confint(.x,"victim_sexMale"))
-  ) %>% 
-  select(city_state,results,conf_int) %>% 
-  unnest(results) %>% 
-  unnest_wider(conf_int) %>% 
-  filter(term == "victim_sexMale") %>% 
-  select(city_state,estimate,`2.5 %`,`97.5 %`) %>% 
-  mutate(
-    OR = exp(estimate),
-    OR_lower_bound = exp(`2.5 %`),
-    OR_upper_bound = exp(`97.5 %`)
-    ) %>% 
-  select(city_state,estimate,OR,OR_lower_bound,OR_upper_bound) 
+glm_all = function(citystate){
+  city_glm = homicide %>% 
+    filter(city_state == citystate) %>% 
+    glm(solved ~ victim_sex + victim_race + victim_age, family = binomial, data = .) %>% 
+    broom::tidy() %>% 
+    mutate(OR = exp(estimate), 
+         OR_lower = exp(estimate - 1.96*std.error), 
+         OR_upper = exp(estimate + 1.96*std.error)) %>% 
+    filter(term == "victim_sexMale") %>% 
+    select(OR, OR_lower, OR_upper)
+    
+    city_glm
+}
 ```
 
 
+## 10. apply `glm_all()` to all the cities and tidy the result
 ```{r}
-cities_logistic %>% knitr::kable(digits = 3)
+city_state_list = homicide %>% 
+  select(city_state) %>% 
+  unique()
 
+glm_all_result = city_state_list %>% 
+  mutate(glm_result = map(city_state, glm_all)) %>% 
+  unnest(glm_result) %>% 
+  arrange(desc(OR)) 
+
+glm_all_result %>%  knitr::kable(digits = 3)
 ```
 
 
+
 ```{r}
-ggplot(cities_logistic, aes(y = fct_reorder(city_state, OR), x = OR)) +
-  geom_point() +
-  geom_errorbar(aes(xmin = OR_lower_bound, xmax = OR_upper_bound)) +
-  labs(title = "Estimated OR and 95% CI", ) + ylab("City,State") + theme(axis.text.y = element_text(hjust = 0.5,size = 6))
+ggplot(glm_all_result, aes(y = fct_reorder(city_state, OR), x = OR)) +
+  geom_point(color = "red", lwd = 2) +
+  geom_errorbar(aes(xmin = OR_lower, xmax = OR_upper)) +
+  labs(title = "Estimated OR and 95% CI") + ylab("City,State") + theme(axis.text.y = element_text(hjust = 0.5,size = 8), axis.text.x = element_text(size = 16), axis.title.x = element_text(size = 20), axis.title.y = element_text(size = 20),title = element_text(size = 20))
 
 ```
 
