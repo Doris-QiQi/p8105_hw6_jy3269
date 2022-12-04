@@ -189,7 +189,8 @@ glm_all = function(citystate){
     filter(city_state == citystate) %>% 
     glm(solved ~ victim_sex + victim_race + victim_age, family = binomial, data = .) %>% 
     broom::tidy() %>% 
-    mutate(OR = exp(estimate), 
+    mutate(
+         OR = exp(estimate), 
          OR_lower = exp(estimate - 1.96*std.error), 
          OR_upper = exp(estimate + 1.96*std.error)) %>% 
     filter(term == "victim_sexMale") %>% 
@@ -224,12 +225,15 @@ ggplot(glm_all_result, aes(y = fct_reorder(city_state, OR), x = OR)) +
 
 ```
 
+
+\ \par
 \ \par
 Comments on the plot :
 
   * Most of the estimated OR is less than 1. Thus, in most cities, the homicide whose victim is a male is less likely to be solved compared to those with a female victim.
   * Albuquerque, Stockton, Fresno, Nashville and Richmond have an estimated OR that is above 1. However, their 95% CI contains 1. Thus, we cannot conclude that there is significant difference between the odds of solving homicides for male and female victims in these cities.
   * Some cities' 95% CI does not contain 1, which means that there are significant difference between the odds of solving homicides for male and female victims in these cities. For example, New York, Chicago are cities with CI that does not contain 1.
+
 
 
 \ \par
@@ -244,27 +248,28 @@ data <- read_csv("./data/birthweight.csv")
 
 ```{r}
 birthwt <- data %>% 
-  mutate(
-    frace = recode(frace, `1` = "White", `2` = "Black", `3` = "Asian", `4` = "Puerto Rican", `8` = "Other", `9` = "Unknown"),
-    mrace = recode(mrace, `1` = "White", `2` = "Black", `3` = "Asian", `4` = "Puerto Rican", `8` = "Other"),
-    babysex = recode(babysex, `1` = "Male", `2` = "Female")
-    ) %>% 
-    filter(frace != "Unknown") %>% 
-  mutate(
-    frace = fct_relevel(frace, "White"),
-    mrace = fct_relevel(mrace, "White"),
-    babysex = fct_relevel(babysex,"Female")
-         ) %>% 
+  mutate(babysex = as.factor(babysex),
+         frace = as.factor(frace),
+         malform = as.factor(malform),
+         mrace = as.factor(mrace)) %>%
+  janitor::clean_names() %>% 
   select(bwt,everything())
 
+# show the first 6 rows of the cleaned dataset
 head(birthwt)
 
 
+# check the missing values
+sum(is.na(birthwt))
 ```
 
 
+  Thus, the data has no missing values.
+
+
 \ \par
-Next, I will fit my linear model using the cleaned data. I examined the meaning of each variable and find it reasonable that all the variables may be relevant to the birth weight of a baby. Thus, I plan to fit the model using all the variables other than `bwt` (the response variable) as predictors to build a full model first. Then I will use the step-wise method to select significant variables backwards. The selected variables and the response variable build up my regression model.
+\ \par
+Next, I will fit my linear model using the cleaned data. I examined the meaning of each variable and find it reasonable that all the variables may be relevant to the birth weight of a baby. Thus, I plan to fit the model using all the variables other than `bwt` (the response variable) as predictors to build a full model first. Then I will use the step-wise method to select significant variables backwards. The selected predictors and the response variable will build up my regression model.
 
 
 
@@ -281,12 +286,12 @@ broom::tidy(full_model) %>%  knitr::kable()
 ## 3. Select variables in the full model 
 ```{r}
 stepwise_model <- MASS::stepAIC(full_model, direction = "backward", trace = FALSE)
+
 broom::tidy(stepwise_model) %>%  knitr::kable()
-
-
 ```
 
 
+\ \par
 \ \par
 As is shown in the stepwise_model result, the selected predictors are : babysex, bhead, blength, delwt, fincome, gaweeks, mheight, mrace, parity, ppwt, smoken. 
 
@@ -322,7 +327,7 @@ cv_df =
 ```{r,warning=FALSE}
 cv_df %>% 
   mutate(
-    my_model  = map(train, ~lm( bwt ~ babysex + bhead + blength + delwt + fincome + 
+    my_model  = map(train, ~lm(bwt ~ babysex + bhead + blength + delwt + fincome + 
     gaweeks + mheight + mrace + parity + ppwt + smoken, data = .x)),
     model_2  = map(train, ~lm(bwt ~ gaweeks + blength, data = .x)),
     model_3  = map(train, ~lm(bwt ~ bhead*blength*babysex, data = .x))) %>% 
@@ -366,6 +371,8 @@ cv_df %>%
 
 ```
 
+
+\ \par
 \ \par
 According to the table and violin plot above, we know that my model has the lowest mean RMSE. The main effect model (model 2) has the highest RMSE. The interaction model (model 3) has RMSE slightly higher than my model.
 
